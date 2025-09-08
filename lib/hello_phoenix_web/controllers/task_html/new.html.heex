@@ -1,8 +1,25 @@
-<Layouts.app flash={@flash}>
-  <.header>
-    New Task
-    <:subtitle>Use this form to manage task records in your database.</:subtitle>
-  </.header>
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex items-center space-x-3">
+      <div class="flex-shrink-0">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Create New Task</h1>
+        <p class="mt-1 text-sm text-gray-600">Add a new task to your todo list</p>
+      </div>
+    </div>
+  </div>
 
-  <.task_form changeset={@changeset} action={~p"/tasks"} return_to={~p"/tasks"} />
-</Layouts.app>
+  <!-- Form Card -->
+  <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+    <div class="px-6 py-6">
+      <%= render "form.html", Map.put(assigns, :action, Routes.task_path(@conn, :create)) %>
+    </div>
+  </div>
+</div>
