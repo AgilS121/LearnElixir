@@ -1,4 +1,5 @@
 defmodule HelloPhoenixWeb.Router do
+  # alias HelloPhoenixWeb.TaskController
   use HelloPhoenixWeb, :router
 
   pipeline :browser do
@@ -18,6 +19,7 @@ defmodule HelloPhoenixWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    resources "/tasks", TaskController
   end
 
   # Other scopes may use custom stacks.
