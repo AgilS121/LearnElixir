@@ -1,4 +1,4 @@
-FROM hexpm/elixir:1.16.2-erlang-26.2.5-debian-bookworm AS build
+FROM hexpm/elixir:1.16.2-erlang-26.2.5-debian-bookworm-20240513-slim AS build
 RUN apt-get update && apt-get install -y build-essential git curl nodejs npm
 WORKDIR /app
 
