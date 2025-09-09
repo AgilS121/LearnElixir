@@ -1,13 +1,15 @@
 services:
-  app:
-    build: .
-    container_name: elixir_app
-    restart: unless-stopped
-    env_file:
-      - .env
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    user: root                    # penting: biar bisa akses /var/run/docker.sock
     ports:
-      - "4000:4000"   # akses dari LAN: http://10.10.10.11:4000
-    environment:
-      - MIX_ENV=prod
-      - PHX_SERVER=true
-      - PORT=4000
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock    # <- ini yang ngasih akses ke daemon Docker host
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:
