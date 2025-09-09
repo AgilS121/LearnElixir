@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: elixir_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"   # akses dari LAN: http://10.10.10.11:4000
+    environment:
+      - MIX_ENV=prod
+      - PHX_SERVER=true
+      - PORT=4000
