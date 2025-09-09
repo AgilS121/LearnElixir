@@ -16,18 +16,29 @@ config :hello_phoenix, HelloPhoenix.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
+# config :hello_phoenix, HelloPhoenixWeb.Endpoint,
+#   # Binding to loopback ipv4 address prevents access from other machines.
+#   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
+#   http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+#   check_origin: false,
+#   code_reloader: true,
+#   debug_errors: true,
+#   secret_key_base: "TOKJETU3gZ51RwBvPU7R21uDKYw07tSkHLg9SkO9FwVVQuoh4bK4qawUlEajW4V8",
+#   watchers: [
+#     esbuild: {Esbuild, :install_and_run, [:hello_phoenix, ~w(--sourcemap=inline --watch)]},
+#     tailwind: {Tailwind, :install_and_run, [:hello_phoenix, ~w(--watch)]}
+#   ]
 config :hello_phoenix, HelloPhoenixWeb.Endpoint,
-  # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  http: [ip: {0,0,0,0}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "TOKJETU3gZ51RwBvPU7R21uDKYw07tSkHLg9SkO9FwVVQuoh4bK4qawUlEajW4V8",
+  secret_key_base: "WpLq0Y7mXUYzZSf+uubJI6cz5a5sDBmmToauXtkJQ3J/9pONidDxqB0l8AYSEXgf",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:hello_phoenix, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:hello_phoenix, ~w(--watch)]}
   ]
+
 
 # ## SSL Support
 #

@@ -65,7 +65,10 @@ defmodule HelloPhoenix.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:floki, ">= 0.30.0", only: :test},
+      {:finch, "~> 0.13"},
+      {:plug_cowboy, "~> 2.5"}
     ]
   end
 

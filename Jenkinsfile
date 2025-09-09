@@ -4,19 +4,25 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'master', url: 'git@github.com:AgilS121/LearnElixir.git', credentialsId: 'github_ssh'
+        git branch: 'master',
+            url: 'git@github.com:AgilS121/LearnElixir.git',
+            credentialsId: 'github_ssh'
       }
     }
-    stage('Build/Test') {
+
+    stage('Build') {
       steps {
-        // ganti sesuai kebutuhanmu
-        script {
-          if (isUnix()) {
-            sh 'echo "Run your build here"'
-          } else {
-            bat 'echo Run your build here'
-          }
-        }
+        sh 'docker compose build'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sh '''
+          docker compose up -d
+          sleep 5
+          curl -fsS http://10.10.10.11:4000/ >/dev/null || true
+        '''
       }
     }
   }
@@ -24,32 +30,20 @@ pipeline {
   post {
     success {
       withCredentials([string(credentialsId: 'discord_webhook', variable: 'HOOK')]) {
-        script {
-          def msg = "✅ **SUCCESS** — `${env.JOB_NAME}` #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-          if (isUnix()) {
-            sh """curl -s -H "Content-Type: application/json" \
-              -d '{ "content": "${msg.replaceAll('"','\\\\\\"')}" }' "$HOOK" >/dev/null || true"""
-          } else {
-            bat """powershell -NoProfile -Command ^
-              \$body = @{ content = '${msg.replaceAll("'", "''")}' } | ConvertTo-Json; ^
-              Invoke-RestMethod -Uri "$env:HOOK" -Method Post -ContentType 'application/json' -Body \$body"""
-          }
-        }
+        sh '''
+          content="✅ SUCCESS — ${JOB_NAME} #${BUILD_NUMBER}\\n${BUILD_URL}"
+          json=$(printf '{"content":"%s"}' "$content")
+          curl -fsSL -H "Content-Type: application/json" -d "$json" "$HOOK"
+        '''
       }
     }
     failure {
       withCredentials([string(credentialsId: 'discord_webhook', variable: 'HOOK')]) {
-        script {
-          def msg = "❌ **FAILED** — `${env.JOB_NAME}` #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-          if (isUnix()) {
-            sh """curl -s -H "Content-Type: application/json" \
-              -d '{ "content": "${msg.replaceAll('"','\\\\\\"')}" }' "$HOOK" >/dev/null || true"""
-          } else {
-            bat """powershell -NoProfile -Command ^
-              \$body = @{ content = '${msg.replaceAll("'", "''")}' } | ConvertTo-Json; ^
-              Invoke-RestMethod -Uri "$env:HOOK" -Method Post -ContentType 'application/json' -Body \$body"""
-          }
-        }
+        sh '''
+          content="❌ FAILED — ${JOB_NAME} #${BUILD_NUMBER}\\n${BUILD_URL}"
+          json=$(printf '{"content":"%s"}' "$content")
+          curl -fsSL -H "Content-Type: application/json" -d "$json" "$HOOK"
+        '''
       }
     }
   }

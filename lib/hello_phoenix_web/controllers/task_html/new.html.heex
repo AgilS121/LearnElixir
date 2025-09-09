@@ -19,7 +19,7 @@
   <!-- Form Card -->
   <div class="bg-white shadow-sm rounded-lg border border-gray-200">
     <div class="px-6 py-6">
-      <%= render "form.html", Map.put(assigns, :action, Routes.task_path(@conn, :create)) %>
+      <.task_form changeset={@changeset} action={~p"/tasks"} />
     </div>
   </div>
 </div>
