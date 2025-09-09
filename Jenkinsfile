@@ -13,9 +13,12 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh 'docker-compose build'
+        sh '''
+          docker-compose build --no-cache --progress=plain
+        '''
       }
     }
+
     stage('Deploy') {
       steps {
         sh '''
