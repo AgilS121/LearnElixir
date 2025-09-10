@@ -1,14 +1,39 @@
+# services:
+#   app:
+#     build: .
+#     image: hello_phoenix-app
+#     container_name: elixir_app
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+#     environment:
+#       - MIX_ENV=prod
+#       - PHX_SERVER=true
+#       - PORT=4000
+#     ports:
+#       - "4000:4000"
+
+
+version: "3.9"
 services:
-  app:
+  app_blue:
     build: .
-    image: hello_phoenix-app
-    container_name: elixir_app
-    restart: unless-stopped
-    env_file:
-      - .env
+    container_name: elixir_app_blue
+    env_file: .env
+    ports:
+      - "4001:4000"
     environment:
       - MIX_ENV=prod
       - PHX_SERVER=true
       - PORT=4000
+
+  app_green:
+    build: .
+    container_name: elixir_app_green
+    env_file: .env
     ports:
-      - "4000:4000"
+      - "4002:4000"
+    environment:
+      - MIX_ENV=prod
+      - PHX_SERVER=true
+      - PORT=4000
