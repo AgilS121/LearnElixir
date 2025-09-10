@@ -18,15 +18,20 @@ pipeline {
     }
 
     stage('Deploy') {
-      steps {
-        sh '''
-          docker compose down || true
-          docker compose up -d --force-recreate
-          sleep 5
-          curl -fsS http://10.10.10.11:4000/ >/dev/null
-        '''
-      }
-    }
+  steps {
+    sh '''
+      # pakai Compose v2
+      docker compose build --pull
+      # hapus container lama kalau ada
+      docker rm -f elixir_app || true
+      # jalankan ulang
+      docker compose up -d --force-recreate --remove-orphans
+      sleep 5
+      curl -fsS http://10.10.10.11:4000/ >/dev/null
+    '''
+  }
+}
+
 
 
   }
