@@ -22,6 +22,8 @@ defmodule HelloPhoenixWeb.Router do
     resources "/tasks", TaskController
 
     get "/hello", HelloController, :index
+
+    get "/_version", VersionController, :index
   end
 
 
