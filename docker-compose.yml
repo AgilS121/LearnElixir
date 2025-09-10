@@ -1,13 +1,14 @@
 services:
   app:
     build: .
+    image: hello_phoenix-app
     container_name: elixir_app
     restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "4000:4000"
     environment:
       - MIX_ENV=prod
       - PHX_SERVER=true
       - PORT=4000
+    ports:
+      - "4000:4000"

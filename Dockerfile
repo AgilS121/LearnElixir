@@ -1,7 +1,6 @@
-# ====== BUILD IMAGE ======
+# ===== BUILD STAGE =====
 FROM hexpm/elixir:1.16.2-erlang-26.2.5-debian-bookworm-20240513-slim AS build
 
-# Paket untuk compile deps (NIF), assets, SSL, dll.
 RUN apt-get update && apt-get install -y \
     build-essential git curl ca-certificates \
     nodejs npm \
@@ -10,40 +9,40 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Elixir toolchain
+# Elixir tools
 RUN mix local.hex --force && mix local.rebar --force
 
-# (Opsional cache awal) ambil deps berdasarkan mix.exs & mix.lock
+# Ambil deps awal (cache)
 COPY mix.exs mix.lock ./
 ENV MIX_ENV=prod
 RUN mix deps.get --only prod
 
-# Salin seluruh source, lalu **sync ulang deps** supaya lock selalu cocok
+# Copy source lalu sync ulang deps
 COPY . .
 RUN mix deps.get --only prod --force
 
-# (Jika ada assets, aktifkan baris berikut)
-# RUN npm --prefix ./assets ci \
-#  && npm --prefix ./assets run build \
-#  && mix phx.digest
+# Assets (opsional; kalau proyekmu pakai)
+RUN mix assets.deploy || true
 
-# Compile deps & project (pisah layer agar error jelas)
+# Compile & release
 RUN mix deps.compile --all --verbose
 RUN mix compile --verbose
+RUN mix release
 
-
-# ====== RUNTIME IMAGE ======
+# ===== RUNTIME STAGE =====
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y \
-    openssl ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl ca-certificates bash \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=build /app /app
 
-ENV MIX_ENV=prod PHX_SERVER=true PORT=4000
+# GANTI jika nama OTP app kamu bukan "hello_phoenix"
+ARG APP_NAME=hello_phoenix
+COPY --from=build /app/_build/prod/rel/${APP_NAME} /app
+
+ENV PHX_SERVER=true MIX_ENV=prod PORT=4000
 EXPOSE 4000
 
-# Jalankan migrasi (jika ada DB) lalu start server
-CMD ["bash","-lc","mix ecto.migrate || true; mix phx.server"]
+CMD ["/app/bin/hello_phoenix", "start"]
