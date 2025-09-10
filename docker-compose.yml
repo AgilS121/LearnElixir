@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   postgres:
     image: postgres:15
@@ -13,9 +12,14 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app_blue:
-    build: .                      # <- ini yang bikin image dari Dockerfile
+    build: .
     container_name: elixir_app_blue
     restart: unless-stopped
     environment:
@@ -23,22 +27,25 @@ services:
       PHX_SERVER: "true"
       PHX_HOST: "10.10.10.11"
       PORT: "4000"
-      DATABASE_URL: "ecto://postgres:postgres@postgres/hello_phoenix_prod"
+      # 🔥 FIX: Ganti ecto:// menjadi postgresql://
+      DATABASE_URL: "postgresql://postgres:postgres@postgres/hello_phoenix_prod"
       SECRET_KEY_BASE: "GANTI_DENGAN_HASIL_mix phx.gen.secret"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy  # Tunggu postgres benar-benar healthy
     ports:
       - "4001:4000"
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 4000 || exit 1"]
-      interval: 5s
-      timeout: 2s
+      # 🔥 FIX: Gunakan HTTP health check, bukan hanya port check
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:4000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 30
-      start_period: 15s
+      start_period: 30s  # Beri waktu lebih untuk startup
 
   app_green:
-    build: .                      # <- sama, build dari Dockerfile yang sama
+    build: .
     container_name: elixir_app_green
     restart: unless-stopped
     environment:
@@ -46,19 +53,22 @@ services:
       PHX_SERVER: "true"
       PHX_HOST: "10.10.10.11"
       PORT: "4000"
-      DATABASE_URL: "ecto://postgres:postgres@postgres/hello_phoenix_prod"
+      # 🔥 FIX: Ganti ecto:// menjadi postgresql://
+      DATABASE_URL: "postgresql://postgres:postgres@postgres/hello_phoenix_prod"
       SECRET_KEY_BASE: "GANTI_DENGAN_HASIL_mix phx.gen.secret"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy  # Tunggu postgres benar-benar healthy
     ports:
       - "4002:4000"
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 4000 || exit 1"]
-      interval: 5s
-      timeout: 2s
+      # 🔥 FIX: Gunakan HTTP health check, bukan hanya port check
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:4000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 30
-      start_period: 15s
+      start_period: 30s  # Beri waktu lebih untuk startup
 
   lb:
     image: nginx:alpine

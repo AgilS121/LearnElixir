@@ -24,6 +24,8 @@ defmodule HelloPhoenixWeb.Router do
     get "/hello", HelloController, :index
 
     get "/_version", VersionController, :index
+
+    get "/health", HealthController, :check
   end
 
 

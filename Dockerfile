@@ -1,48 +1,82 @@
 # ===== BUILD STAGE =====
-FROM hexpm/elixir:1.16.2-erlang-26.2.5-debian-bookworm-20240513-slim AS build
+FROM hexpm/elixir:1.16.2-erlang-26.2.5-debian-bookworm-20240904-slim AS build
 
-RUN apt-get update && apt-get install -y \
-    build-essential git curl ca-certificates \
-    nodejs npm \
-    pkg-config libssl-dev libsqlite3-dev \
-  && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apt-get update -y && apt-get install -y \
+  build-essential \
+  git \
+  curl \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
+# Prepare build dir
 WORKDIR /app
 
-# Elixir tools
-RUN mix local.hex --force && mix local.rebar --force
+# Install hex + rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
 
-# Ambil deps awal (cache)
-COPY mix.exs mix.lock ./
+# Set build ENV
 ENV MIX_ENV=prod
-RUN mix deps.get --only prod
 
-# Copy source lalu sync ulang deps
-COPY . .
-RUN mix deps.get --only prod --force
+# Install mix dependencies
+COPY mix.exs mix.lock ./
+RUN mix deps.get --only=prod
+RUN mkdir config
 
-# Assets (opsional; kalau proyekmu pakai)
-RUN mix assets.deploy || true
+# Copy compile-time config files before we compile dependencies
+# to ensure any relevant config change will trigger the dependencies
+# to be re-compiled.
+COPY config/config.exs config/${MIX_ENV}.exs config/
+RUN mix deps.compile
 
-# Compile & release
-RUN mix deps.compile --all --verbose
-RUN mix compile --verbose
+# Copy priv and lib (compiling assets if needed)
+COPY priv priv
+COPY lib lib
+
+# NOTE: Jika menggunakan assets, uncomment baris ini:
+# COPY assets assets
+# RUN mix assets.deploy
+
+# Compile the release
+RUN mix compile
+
+# Copy runtime config (if exists)
+COPY config/runtime.exs config/ || true
+
+# Assemble the release
 RUN mix release
 
 # ===== RUNTIME STAGE =====
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim AS app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssl ca-certificates bash \
-  && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies
+RUN apt-get update -y && apt-get install -y \
+  libstdc++6 \
+  openssl \
+  libncurses5 \
+  locales \
+  curl \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Set the locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 WORKDIR /app
+RUN chown nobody /app
 
-# GANTI jika nama OTP app kamu bukan "hello_phoenix"
-ARG APP_NAME=hello_phoenix
-COPY --from=build /app/_build/prod/rel/${APP_NAME} /app
+# Set runner ENV
+ENV MIX_ENV=prod
 
-ENV PHX_SERVER=true MIX_ENV=prod PORT=4000
+# Only copy the final release from the build stage
+COPY --from=build --chown=nobody:root /app/_build/${MIX_ENV}/rel/hello_phoenix ./
+
+USER nobody
+
+# Expose port 4000
 EXPOSE 4000
 
+# Start the Phoenix server
 CMD ["/app/bin/hello_phoenix", "start"]
