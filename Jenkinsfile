@@ -17,32 +17,46 @@ pipeline {
       }
     }
 
-    stage('Deploy') {
+    stage('Deploy (Blue-Green)') {
       steps {
         script {
-          def activePort = sh(script: "grep server /etc/nginx/conf.d/default.conf | grep -oE '400[12]'", returnStdout: true).trim()
-          def newPort = (activePort == "4001") ? "4002" : "4001"
+          // 1) deteksi port aktif dari file upstream_target.conf (di host workspace)
+          sh 'grep -oE "400[12]" nginx/upstream_target.conf || true'
+          def active = sh(script: "grep -oE '400[12]' nginx/upstream_target.conf || echo 4001", returnStdout: true).trim()
+          def newPort = (active == "4001") ? "4002" : "4001"
+          def newSvc  = (newPort == "4001") ? "app_blue" : "app_green"
+          def oldSvc  = (newPort == "4001") ? "app_green" : "app_blue"
 
+          // 2) build & start target baru
           sh """
-            docker compose build app_${newPort == '4001' ? 'blue' : 'green'}
-            docker compose up -d app_${newPort == '4001' ? 'blue' : 'green'}
-
-            # healthcheck
-            for i in {1..10}; do
-              curl -fsS http://10.10.10.11:${newPort} && break
-              sleep 3
-            done
-
-            # update nginx ke port baru
-            sed -i "s/${activePort}/${newPort}/" /etc/nginx/conf.d/default.conf
-            docker exec nginx_container nginx -s reload
-
-            # matikan versi lama
-            docker stop elixir_app_${activePort == '4001' ? 'blue' : 'green'} || true
+            docker compose build ${newSvc}
+            docker compose up -d ${newSvc}
           """
+
+          // 3) healthcheck target baru (pakai endpoint yang pasti 200; bisa '/' atau '/_version')
+          sh """
+            for i in {1..30}; do
+              if curl -fsS http://10.10.10.11:${newPort}/ >/dev/null; then
+                echo "New target healthy on ${newPort}"
+                break
+              fi
+              sleep 2
+              [ \$i -eq 30 ] && echo "New target NOT healthy" && exit 1
+            done
+          """
+
+          // 4) switch Nginx: tulis file upstream_target.conf -> port baru, lalu reload
+          sh """
+            echo "server 10.10.10.11:${newPort};" > nginx/upstream_target.conf
+            docker exec elixir_lb nginx -s reload
+          """
+
+          // 5) stop versi lama (optional: bisa ditunda beberapa detik)
+          sh "docker compose stop ${oldSvc} || true"
         }
       }
     }
+
 
   }
 

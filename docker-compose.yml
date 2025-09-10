@@ -1,39 +1,33 @@
-# services:
-#   app:
-#     build: .
-#     image: hello_phoenix-app
-#     container_name: elixir_app
-#     restart: unless-stopped
-#     env_file:
-#       - .env
-#     environment:
-#       - MIX_ENV=prod
-#       - PHX_SERVER=true
-#       - PORT=4000
-#     ports:
-#       - "4000:4000"
-
-
-version: "3.9"
 services:
   app_blue:
     build: .
     container_name: elixir_app_blue
     env_file: .env
-    ports:
-      - "4001:4000"
     environment:
       - MIX_ENV=prod
       - PHX_SERVER=true
       - PORT=4000
+    ports:
+      - "4001:4000"
+    restart: unless-stopped
 
   app_green:
     build: .
     container_name: elixir_app_green
     env_file: .env
-    ports:
-      - "4002:4000"
     environment:
       - MIX_ENV=prod
       - PHX_SERVER=true
       - PORT=4000
+    ports:
+      - "4002:4000"
+    restart: unless-stopped
+
+  lb:
+    image: nginx:1.25-alpine
+    container_name: elixir_lb
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./nginx/app.conf:/etc/nginx/conf.d/app.conf:ro
+      - ./nginx/upstream_target.conf:/etc/nginx/conf.d/upstream_target.conf:rw
