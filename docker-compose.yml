@@ -1,46 +1,77 @@
+version: "3.9"
+
 services:
-  app_blue:
-    build: .
-    container_name: elixir_app_blue
-    env_file: .env
+  postgres:
+    image: postgres:15
+    container_name: elixir_db
+    restart: unless-stopped
     environment:
-      - MIX_ENV=prod
-      - PHX_SERVER=true
-      - PORT=4000
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hello_phoenix_prod
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app_blue:
+    build: .                      # <- ini yang bikin image dari Dockerfile
+    container_name: elixir_app_blue
+    restart: unless-stopped
+    environment:
+      MIX_ENV: prod
+      PHX_SERVER: "true"
+      PHX_HOST: "10.10.10.11"
+      PORT: "4000"
+      DATABASE_URL: "ecto://postgres:postgres@postgres/hello_phoenix_prod"
+      SECRET_KEY_BASE: "GANTI_DENGAN_HASIL_mix phx.gen.secret"
+      ELIXIR_ERL_OPTIONS: "+fnu"
+    depends_on:
+      - postgres
     ports:
       - "4001:4000"
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:4000/ || exit 1"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 4000 || exit 1"]
       interval: 5s
       timeout: 2s
-      retries: 20
+      retries: 30
+      start_period: 15s
 
   app_green:
-    build: .
+    build: .                      # <- sama, build dari Dockerfile yang sama
     container_name: elixir_app_green
-    env_file: .env
+    restart: unless-stopped
     environment:
-      - MIX_ENV=prod
-      - PHX_SERVER=true
-      - PORT=4000
+      MIX_ENV: prod
+      PHX_SERVER: "true"
+      PHX_HOST: "10.10.10.11"
+      PORT: "4000"
+      DATABASE_URL: "ecto://postgres:postgres@postgres/hello_phoenix_prod"
+      SECRET_KEY_BASE: "GANTI_DENGAN_HASIL_mix phx.gen.secret"
+      ELIXIR_ERL_OPTIONS: "+fnu"
+    depends_on:
+      - postgres
     ports:
       - "4002:4000"
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:4000/ || exit 1"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 4000 || exit 1"]
       interval: 5s
       timeout: 2s
-      retries: 20
+      retries: 30
+      start_period: 15s
 
   lb:
-    image: nginx:1.25-alpine
+    image: nginx:alpine
     container_name: elixir_lb
-    ports:
-      - "4000:4000"
-    volumes:
-      - ./nginx/app.conf:/etc/nginx/conf.d/app.conf:ro
-      - ./nginx/includes/upstream_target.inc:/etc/nginx/includes/upstream_target.inc:rw
     restart: unless-stopped
+    ports:
+      - "4000:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/upstream_target.conf:/etc/nginx/conf.d/upstream_target.conf:ro
+    depends_on:
+      - app_blue
+      - app_green
 
-
+volumes:
+  pgdata:
