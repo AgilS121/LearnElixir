@@ -23,20 +23,24 @@ pipeline {
           sh '''
             set -eu
 
-            # 1) Tentukan port aktif dari file yang di-mount ke Nginx
-            ACTIVE_PORT=$(grep -oE "400[12]" nginx/upstream_target.conf || echo 4001)
+            # Tentukan yang aktif dari file upstream (default 4001)
+            ACTIVE_PORT=$(grep -oE "400[12]" nginx/includes/upstream_target.inc || echo 4001)
+
             if [ "$ACTIVE_PORT" = "4001" ]; then
-              NEW_PORT=4002; NEW_SVC=app_green; OLD_SVC=app_blue; NEW_COLOR=green
+              NEW_PORT=4002; NEW_SVC=app_green; OLD_SVC=app_blue;  NEW_COLOR=green
             else
               NEW_PORT=4001; NEW_SVC=app_blue;  OLD_SVC=app_green; NEW_COLOR=blue
             fi
+
             echo "Active=$ACTIVE_PORT  New=$NEW_PORT ($NEW_SVC)"
 
-            # 2) Build & start kandidat baru
+            # **FIX KONFLIK NAMA**: bila container target sudah ada, hapus dulu
+            docker rm -f "elixir_app_${NEW_COLOR}" >/dev/null 2>&1 || true
+
             docker compose build "$NEW_SVC"
             docker compose up -d "$NEW_SVC"
 
-            # 3) Tunggu health=healthy (dari healthcheck compose)
+            # Tunggu healthy (healthcheck dari compose)
             for i in $(seq 1 30); do
               st=$(docker inspect --format '{{.State.Health.Status}}' "elixir_app_${NEW_COLOR}" 2>/dev/null || echo "starting")
               echo "health: $st"
@@ -45,21 +49,20 @@ pipeline {
               [ "$i" -eq 30 ] && echo "Health timeout" && exit 1
             done
 
-            # 4) Switch Nginx ke port baru dan reload
-            echo "server 10.10.10.11:${NEW_PORT};" > nginx/upstream_target.conf
+            # Switch Nginx ke port baru lalu reload
+            echo "server 10.10.10.11:${NEW_PORT};" > nginx/includes/upstream_target.inc
+            docker exec elixir_lb nginx -t
             docker exec elixir_lb nginx -s reload
 
-            # 5) Hentikan versi lama (opsional: bisa sleep 3 dulu)
+            # Matikan versi lama (opsional)
             docker compose stop "$OLD_SVC" || true
 
-            # 6) Bersihkan orphan
+            # Rapikan orphan
             docker compose up -d --remove-orphans
           '''
         }
       }
     }
-
-
 
   }
 
