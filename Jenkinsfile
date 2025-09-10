@@ -20,42 +20,45 @@ pipeline {
     stage('Deploy (Blue-Green)') {
       steps {
         script {
-          // 1) deteksi port aktif dari file upstream_target.conf (di host workspace)
-          sh 'grep -oE "400[12]" nginx/upstream_target.conf || true'
-          def active = sh(script: "grep -oE '400[12]' nginx/upstream_target.conf || echo 4001", returnStdout: true).trim()
-          def newPort = (active == "4001") ? "4002" : "4001"
-          def newSvc  = (newPort == "4001") ? "app_blue" : "app_green"
-          def oldSvc  = (newPort == "4001") ? "app_green" : "app_blue"
+          sh '''
+            set -eu
 
-          // 2) build & start target baru
-          sh """
-            docker compose build ${newSvc}
-            docker compose up -d ${newSvc}
-          """
+            # 1) Tentukan port aktif dari file yang di-mount ke Nginx
+            ACTIVE_PORT=$(grep -oE "400[12]" nginx/upstream_target.conf || echo 4001)
+            if [ "$ACTIVE_PORT" = "4001" ]; then
+              NEW_PORT=4002; NEW_SVC=app_green; OLD_SVC=app_blue; NEW_COLOR=green
+            else
+              NEW_PORT=4001; NEW_SVC=app_blue;  OLD_SVC=app_green; NEW_COLOR=blue
+            fi
+            echo "Active=$ACTIVE_PORT  New=$NEW_PORT ($NEW_SVC)"
 
-          // 3) healthcheck target baru (pakai endpoint yang pasti 200; bisa '/' atau '/_version')
-          sh """
-            for i in {1..30}; do
-              if curl -fsS http://10.10.10.11:${newPort}/ >/dev/null; then
-                echo "New target healthy on ${newPort}"
-                break
-              fi
+            # 2) Build & start kandidat baru
+            docker compose build "$NEW_SVC"
+            docker compose up -d "$NEW_SVC"
+
+            # 3) Tunggu health=healthy (dari healthcheck compose)
+            for i in $(seq 1 30); do
+              st=$(docker inspect --format '{{.State.Health.Status}}' "elixir_app_${NEW_COLOR}" 2>/dev/null || echo "starting")
+              echo "health: $st"
+              [ "$st" = "healthy" ] && break
               sleep 2
-              [ \$i -eq 30 ] && echo "New target NOT healthy" && exit 1
+              [ "$i" -eq 30 ] && echo "Health timeout" && exit 1
             done
-          """
 
-          // 4) switch Nginx: tulis file upstream_target.conf -> port baru, lalu reload
-          sh """
-            echo "server 10.10.10.11:${newPort};" > nginx/upstream_target.conf
+            # 4) Switch Nginx ke port baru dan reload
+            echo "server 10.10.10.11:${NEW_PORT};" > nginx/upstream_target.conf
             docker exec elixir_lb nginx -s reload
-          """
 
-          // 5) stop versi lama (optional: bisa ditunda beberapa detik)
-          sh "docker compose stop ${oldSvc} || true"
+            # 5) Hentikan versi lama (opsional: bisa sleep 3 dulu)
+            docker compose stop "$OLD_SVC" || true
+
+            # 6) Bersihkan orphan
+            docker compose up -d --remove-orphans
+          '''
         }
       }
     }
+
 
 
   }
