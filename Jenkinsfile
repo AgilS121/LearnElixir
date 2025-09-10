@@ -13,21 +13,21 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh '''
-          docker-compose build --no-cache --progress=plain
-        '''
+        sh 'docker compose --progress=plain build --no-cache --pull'
       }
     }
 
     stage('Deploy') {
       steps {
         sh '''
-          docker-compose up -d
+          docker compose down || true
+          docker compose up -d --force-recreate
           sleep 5
-          curl -fsS http://10.10.10.11:4000/ >/dev/null || true
+          curl -fsS http://10.10.10.11:4000/ >/dev/null
         '''
       }
     }
+
 
   }
 
