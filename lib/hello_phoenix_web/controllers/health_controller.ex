@@ -12,4 +12,7 @@ defmodule HelloPhoenixWeb.HealthController do
         |> json(%{status: "error", database: "disconnected"})
     end
   end
+
+  def index(conn, _), do: Plug.Conn.send_resp(conn, 200, "ok")
+
 end
