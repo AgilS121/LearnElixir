@@ -1,1 +1,1 @@
-server 10.10.10.11:4002;
+server app_blue:4000;

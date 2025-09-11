@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Elixir tools
+# Elixir tooling
 RUN mix local.hex --force && mix local.rebar --force
 
 # Cache deps
@@ -17,10 +17,14 @@ COPY mix.exs mix.lock ./
 ENV MIX_ENV=prod
 RUN mix deps.get --only prod
 
-# Copy source & compile
+# Copy source & deps again (ensure lock synced)
 COPY . .
 RUN mix deps.get --only prod --force
+
+# Assets (jika ada)
 RUN mix assets.deploy || true
+
+# Compile & release
 RUN mix deps.compile --all --verbose
 RUN mix compile --verbose
 RUN mix release
@@ -28,26 +32,24 @@ RUN mix release
 # ===== RUNTIME STAGE =====
 FROM debian:bookworm-slim
 
-# curl diperlukan untuk healthcheck container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl ca-certificates bash curl \
   && rm -rf /var/lib/apt/lists/*
 
-# User non-root
+# user non-root (opsional, bagus untuk security)
 RUN useradd -m -u 10001 app
 
 WORKDIR /app
 
-# GANTI jika nama OTP app bukan "hello_phoenix"
 ARG APP_NAME=hello_phoenix
 COPY --from=build /app/_build/prod/rel/${APP_NAME} /app
-
-# Entrypoint untuk migrate + start
 COPY entrypoint.sh /app/entrypoint.sh
+
 RUN chmod +x /app/entrypoint.sh && chown -R app:app /app
 
 ENV PHX_SERVER=true MIX_ENV=prod PORT=4000
 EXPOSE 4000
 
 USER app
-CMD ["/app/entrypoint.sh"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]

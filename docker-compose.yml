@@ -26,7 +26,7 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "AC+T8HqwIPCrcms2ubOfdcDCrRpUHzCha3W+uKv7QDm32XjMsqcG4GWABokRJza8"
+      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
@@ -51,7 +51,7 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "AC+T8HqwIPCrcms2ubOfdcDCrRpUHzCha3W+uKv7QDm32XjMsqcG4GWABokRJza8"
+      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
@@ -73,11 +73,10 @@ services:
       - "4000:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/includes/upstream_target.inc:/etc/nginx/conf.d/upstream_target.inc:ro
     depends_on:
-      app_blue:
-        condition: service_started
-      app_green:
-        condition: service_started
+      app_blue:  { condition: service_started }
+      app_green: { condition: service_started }
     networks: [appnet]
 
 volumes:
