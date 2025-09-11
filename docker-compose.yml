@@ -68,14 +68,14 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "4000:80"  # hanya LB yang publish ke host
+      - "4000:80"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/includes/upstream_target.inc:/etc/nginx/conf.d/upstream_target.inc:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro   # ⬅️ mount folder, bukan file-per-file
     depends_on:
       app_blue:  { condition: service_started }
       app_green: { condition: service_started }
     networks: [appnet]
+
 
 volumes:
   pgdata:
