@@ -26,7 +26,7 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
+      SECRET_KEY_BASE: "idyzFVSkTyXKGg5F1s55nuewVzzf6VltdEYLgVa8ImhA+hpyQriXdzI/WiuCyl8K"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
@@ -51,7 +51,7 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
+      SECRET_KEY_BASE: "idyzFVSkTyXKGg5F1s55nuewVzzf6VltdEYLgVa8ImhA+hpyQriXdzI/WiuCyl8K"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
