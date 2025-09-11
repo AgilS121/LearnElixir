@@ -26,13 +26,12 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "idyzFVSkTyXKGg5F1s55nuewVzzf6VltdEYLgVa8ImhA+hpyQriXdzI/WiuCyl8K"
+      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "4001:4000"
+    expose: ["4000"]   # ⬅️ tidak publish ke host
     healthcheck:
       test: ["CMD", "curl", "-fsS", "--max-time", "2", "http://127.0.0.1:4000/health"]
       interval: 5s
@@ -51,13 +50,12 @@ services:
       PHX_PORT: "4000"
       PORT: "4000"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hello_phoenix_prod"
-      SECRET_KEY_BASE: "idyzFVSkTyXKGg5F1s55nuewVzzf6VltdEYLgVa8ImhA+hpyQriXdzI/WiuCyl8K"
+      SECRET_KEY_BASE: "<HASIL_ASLI_mix phx.gen.secret>"
       ELIXIR_ERL_OPTIONS: "+fnu"
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "4002:4000"
+    expose: ["4000"]   # ⬅️ tidak publish ke host
     healthcheck:
       test: ["CMD", "curl", "-fsS", "--max-time", "2", "http://127.0.0.1:4000/health"]
       interval: 5s
@@ -70,7 +68,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "4000:80"
+      - "4000:80"  # hanya LB yang publish ke host
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/includes/upstream_target.inc:/etc/nginx/conf.d/upstream_target.inc:ro

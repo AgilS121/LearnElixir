@@ -157,10 +157,7 @@ import Config
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
-      raise """
-      environment variable DATABASE_URL is missing.
-      For example: postgresql://USER:PASS@HOST:5432/DB
-      """
+      raise "env DATABASE_URL missing"
 
   config :hello_phoenix, HelloPhoenix.Repo,
     url: database_url,
@@ -169,7 +166,7 @@ if config_env() == :prod do
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
-      raise "environment variable SECRET_KEY_BASE is missing. Run: mix phx.gen.secret"
+      raise "env SECRET_KEY_BASE missing (mix phx.gen.secret)"
 
   port =
     (System.get_env("PHX_PORT") || System.get_env("PORT") || "4000")
@@ -182,6 +179,4 @@ if config_env() == :prod do
     http: [ip: {0, 0, 0, 0}, port: port],
     url: [host: host, port: port],
     secret_key_base: secret_key_base
-
-  # Telemetry/Logger/etc bisa ditambah di sini
 end

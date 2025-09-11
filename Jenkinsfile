@@ -19,29 +19,29 @@ pipeline {
 
     stage('Deploy (Blue-Green)') {
       steps {
-        // Jalankan bash lewat heredoc supaya bisa pakai set -euo pipefail di agent yang default-nya /bin/sh
+        // Jalankan bash via heredoc (tanpa tergantung shell Jenkins)
         sh '''
 bash -euo pipefail <<'BASH'
 export COMPOSE_PROJECT_NAME=elixir
 
-# Pastikan include file Nginx ada (default arahkan ke app_blue)
+# Pastikan include awal ada
 mkdir -p nginx/includes
 [ -f nginx/includes/upstream_target.inc ] || echo 'server app_blue:4000;' > nginx/includes/upstream_target.inc
 
-# Baca target aktif dari include; tentukan target baru
+# Baca target aktif; pilih lawannya sebagai kandidat baru
 ACTIVE_SVC="$(grep -oE "app_(blue|green)" -m1 nginx/includes/upstream_target.inc || echo app_blue)"
 if [ "$ACTIVE_SVC" = "app_blue" ]; then
-  NEW_SVC=app_green; OLD_SVC=app_blue; NEW_PORT=4002
+  NEW_SVC=app_green; OLD_SVC=app_blue
 else
-  NEW_SVC=app_blue;  OLD_SVC=app_green; NEW_PORT=4001
+  NEW_SVC=app_blue;  OLD_SVC=app_green
 fi
 echo "Active=$ACTIVE_SVC  New=$NEW_SVC"
 
-# Build & start kandidat baru
+# Build & start kandidat baru (di network internal saja)
 docker compose build "$NEW_SVC"
 docker compose up -d "$NEW_SVC"
 
-# Tunggu HEALTHY pakai container ID (jangan hardcode nama)
+# Tunggu HEALTHY pakai container ID
 CID="$(docker compose ps -q "$NEW_SVC")"
 if [ -z "$CID" ]; then
   echo "No container ID for $NEW_SVC"
@@ -63,7 +63,7 @@ for i in $(seq 1 30); do
   fi
 done
 
-# Pastikan LB hidup (up -d tidak memaksa restart jika sudah jalan)
+# Pastikan LB hidup (publish 4000)
 docker compose up -d lb
 
 # Switch Nginx ke service baru via include, lalu reload
@@ -74,10 +74,10 @@ docker compose exec -T lb nginx -s reload
 # (Opsional) stop versi lama
 docker compose stop "$OLD_SVC" || true
 
-# Bersihkan orphan
+# Rapikan orphan
 docker compose up -d --remove-orphans
 
-# Smoke test via LB
+# Smoke test via LB (host:4000)
 curl -fsS http://localhost:4000/health >/dev/null
 BASH
         '''
