@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -euo pipefail
 
-# Jalankan migrasi kalau modul Release tersedia
+# Jalankan migrasi jika modul Release ada
 /app/bin/hello_phoenix eval '
 if Code.ensure_loaded?(HelloPhoenix.Release) and function_exported?(HelloPhoenix.Release, :migrate, 0) do
   IO.puts("Running DB migrations...")
