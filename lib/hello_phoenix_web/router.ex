@@ -15,22 +15,22 @@ defmodule HelloPhoenixWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # scope "/", HelloPhoenixWeb do
-  #   pipe_through :browser
-
-  #   get "/", PageController, :home
-  #   resources "/tasks", TaskController
-
-  #   get "/hello", HelloController, :index
-
-  #   get "/_version", VersionController, :index
-
-  #   get "/health", HealthController, :check
-  # end
   scope "/", HelloPhoenixWeb do
-    pipe_through :api           # ← lebih ringan daripada :browser
+    pipe_through :browser
+
+    get "/", PageController, :home
+    resources "/tasks", TaskController
+
+    get "/hello", HelloController, :index
+
+    get "/_version", VersionController, :index
+
     get "/health", HealthController, :index
   end
+  # scope "/", HelloPhoenixWeb do
+  #   pipe_through :api           # ← lebih ringan daripada :browser
+  #   get "/health", HealthController, :index
+  # end
 
 
   # Other scopes may use custom stacks.
